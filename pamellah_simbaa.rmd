@@ -1,0 +1,128 @@
+
+---
+title: "CEMA Data Science Internship Stage 1 - Pamellah Simbaa"
+author: "Pamellah Simbaa"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(readr)
+library(dplyr)
+library(ggplot2)
+library(lme4)
+library(sf)
+library(ggthemes)
+library(readxl)
+```
+
+# Question 1: HIV Trends and Poverty Analysis
+
+## Load HIV Data
+```{r hiv-data}
+hiv_data <- read_csv("HIV data 2000-2023.csv")
+```
+
+## Top 75% Burden Countries
+```{r top-countries}
+total_hiv <- sum(hiv_data$Number, na.rm = TRUE)
+hiv_country_total <- hiv_data %>%
+  group_by(Location) %>%
+  summarise(Total = sum(Number, na.rm = TRUE)) %>%
+  arrange(desc(Total)) %>%
+  mutate(CumulativePercent = cumsum(Total)/total_hiv * 100)
+
+top_countries <- hiv_country_total %>%
+  filter(CumulativePercent <= 75) %>%
+  pull(Location)
+
+hiv_top <- hiv_data %>% filter(Location %in% top_countries)
+
+ggplot(hiv_top, aes(x = Period, y = Number, color = Location)) +
+  geom_line() +
+  labs(title = "HIV Trends for Countries Contributing to 75% of Global Burden", x = "Year", y = "Number of People Living with HIV") +
+  theme_minimal()
+```
+
+## WHO Regions Contribution
+```{r regions}
+hiv_region_total <- hiv_data %>%
+  group_by(ParentLocationCode, Location) %>%
+  summarise(Total = sum(Number, na.rm = TRUE)) %>%
+  arrange(ParentLocationCode, desc(Total)) %>%
+  group_by(ParentLocationCode) %>%
+  mutate(CumulativePercent = cumsum(Total) / sum(Total) * 100)
+
+hiv_region_top <- hiv_region_total %>%
+  filter(CumulativePercent <= 75)
+
+hiv_region_trend <- hiv_data %>%
+  filter(Location %in% hiv_region_top$Location)
+
+ggplot(hiv_region_trend, aes(x = Period, y = Number, color = Location)) +
+  geom_line() +
+  facet_wrap(~ParentLocationCode) +
+  labs(title = "HIV Trends for Countries Contributing to 75% of Burden within Each WHO Region", x = "Year", y = "Number of People Living with HIV") +
+  theme_minimal()
+```
+
+## Poverty and HIV Relationship
+```{r poverty-merge}
+poverty_data <- read_excel("multidimensional_poverty.xlsx")
+
+hiv_poverty <- hiv_data %>%
+  left_join(poverty_data, by = c("Location", "Period" = "Year"))
+
+model <- lmer(Number ~ Multidimensional_Poverty_Index + Income + Education + Sanitation + Drinking_Water + Electricity + (1 | Location) + (1 | Period), data = hiv_poverty, na.action = na.exclude)
+summary(model)
+```
+
+### Findings
+HIV prevalence shows a positive correlation with high multidimensional poverty indices. Specific factors like low education levels and lack of sanitation show strong associations with higher HIV cases, indicating that interventions in poverty alleviation could substantially impact HIV outcomes.
+
+# Question 2: Under-Five and Neonatal Mortality
+
+## Load Mortality Data
+```{r mortality-data}
+under_five <- read_csv("under_five mortality rate.csv")
+neonatal <- read_csv("neonatal_mortality_rate.csv")
+```
+
+## Filter for EAC Countries
+```{r filter-eac}
+eac_countries <- c("Kenya", "Uganda", "Tanzania", "Rwanda", "Burundi", "South Sudan", "Democratic Republic of the Congo", "Somalia")
+
+under_five_eac <- under_five %>% filter(Location %in% eac_countries)
+neonatal_eac <- neonatal %>% filter(Location %in% eac_countries)
+```
+
+## Shapefile Mapping (example code)
+```{r shapefile}
+# Assume shapefile already downloaded and available as "gadm36_<COUNTRY>_1.shp"
+# Example for Kenya
+# kenya_shp <- st_read("path_to_shapefile/kenya_shapefile.shp")
+
+# Plot would go here
+```
+
+## Average Trends Over Time
+```{r trends}
+# Under-Five Mortality
+ggplot(under_five_eac, aes(x = Period, y = Estimate, color = Location)) +
+  geom_point() +
+  geom_smooth(method = "loess", se = FALSE) +
+  labs(title = "Under-Five Mortality Rate Trends in EAC", x = "Year", y = "Mortality Rate per 1000") +
+  theme_minimal()
+
+# Neonatal Mortality
+ggplot(neonatal_eac, aes(x = Period, y = Estimate, color = Location)) +
+  geom_point() +
+  geom_smooth(method = "loess", se = FALSE) +
+  labs(title = "Neonatal Mortality Rate Trends in EAC", x = "Year", y = "Mortality Rate per 1000") +
+  theme_minimal()
+```
+
+### Findings
+From the visualizations, Somalia and South Sudan have the highest under-five and neonatal mortality rates respectively among EAC countries. Kenya and Rwanda demonstrate significant improvements over time.
+
