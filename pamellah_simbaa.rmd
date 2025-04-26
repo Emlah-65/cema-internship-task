@@ -17,14 +17,14 @@ library(ggthemes)
 library(readxl)
 ```
 
-# Question 1: HIV Trends and Poverty Analysis
+Question 1: HIV Trends and Poverty Analysis
 
-## Load HIV Data
+ Load HIV Data
 ```{r hiv-data}
 hiv_data <- read_csv("HIV data 2000-2023.csv")
 ```
 
-## Top 75% Burden Countries
+Top 75% Burden Countries
 ```{r top-countries}
 total_hiv <- sum(hiv_data$Number, na.rm = TRUE)
 hiv_country_total <- hiv_data %>%
@@ -45,7 +45,7 @@ ggplot(hiv_top, aes(x = Period, y = Number, color = Location)) +
   theme_minimal()
 ```
 
-## WHO Regions Contribution
+WHO Regions Contribution
 ```{r regions}
 hiv_region_total <- hiv_data %>%
   group_by(ParentLocationCode, Location) %>%
@@ -67,7 +67,7 @@ ggplot(hiv_region_trend, aes(x = Period, y = Number, color = Location)) +
   theme_minimal()
 ```
 
-## Poverty and HIV Relationship
+Poverty and HIV Relationship
 ```{r poverty-merge}
 poverty_data <- read_excel("multidimensional_poverty.xlsx")
 
@@ -78,18 +78,18 @@ model <- lmer(Number ~ Multidimensional_Poverty_Index + Income + Education + San
 summary(model)
 ```
 
-### Findings
+Findings
 HIV prevalence shows a positive correlation with high multidimensional poverty indices. Specific factors like low education levels and lack of sanitation show strong associations with higher HIV cases, indicating that interventions in poverty alleviation could substantially impact HIV outcomes.
 
-# Question 2: Under-Five and Neonatal Mortality
+Question 2: Under-Five and Neonatal Mortality
 
-## Load Mortality Data
+ Load Mortality Data
 ```{r mortality-data}
 under_five <- read_csv("under_five mortality rate.csv")
 neonatal <- read_csv("neonatal_mortality_rate.csv")
 ```
 
-## Filter for EAC Countries
+ Filter for EAC Countries
 ```{r filter-eac}
 eac_countries <- c("Kenya", "Uganda", "Tanzania", "Rwanda", "Burundi", "South Sudan", "Democratic Republic of the Congo", "Somalia")
 
@@ -97,25 +97,25 @@ under_five_eac <- under_five %>% filter(Location %in% eac_countries)
 neonatal_eac <- neonatal %>% filter(Location %in% eac_countries)
 ```
 
-## Shapefile Mapping (example code)
+ Shapefile Mapping (example code)
 ```{r shapefile}
-# Assume shapefile already downloaded and available as "gadm36_<COUNTRY>_1.shp"
-# Example for Kenya
-# kenya_shp <- st_read("path_to_shapefile/kenya_shapefile.shp")
+ Assume shapefile already downloaded and available as "gadm36_<COUNTRY>_1.shp"
+ Example for Kenya
+kenya_shp <- st_read("path_to_shapefile/kenya_shapefile.shp")
 
-# Plot would go here
+Plot would go here
 ```
 
-## Average Trends Over Time
+Average Trends Over Time
 ```{r trends}
-# Under-Five Mortality
+ Under-Five Mortality
 ggplot(under_five_eac, aes(x = Period, y = Estimate, color = Location)) +
   geom_point() +
   geom_smooth(method = "loess", se = FALSE) +
   labs(title = "Under-Five Mortality Rate Trends in EAC", x = "Year", y = "Mortality Rate per 1000") +
   theme_minimal()
 
-# Neonatal Mortality
+Neonatal Mortality
 ggplot(neonatal_eac, aes(x = Period, y = Estimate, color = Location)) +
   geom_point() +
   geom_smooth(method = "loess", se = FALSE) +
@@ -123,6 +123,6 @@ ggplot(neonatal_eac, aes(x = Period, y = Estimate, color = Location)) +
   theme_minimal()
 ```
 
-### Findings
+ Findings
 From the visualizations, Somalia and South Sudan have the highest under-five and neonatal mortality rates respectively among EAC countries. Kenya and Rwanda demonstrate significant improvements over time.
 
